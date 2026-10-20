@@ -1,0 +1,15 @@
+﻿# PlatformIO build output and caches
+.pio/
+**/.pio/
+
+# Editor settings
+.vscode/
+
+# Build artifacts
+*.o
+*.elf
+*.bin
+
+# Windows
+Thumbs.db
+desktop.ini
