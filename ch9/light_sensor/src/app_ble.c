@@ -110,6 +110,15 @@ void appble_update_state(bool onoff)
     esp_ble_mesh_model_t *model = &root_models[1];
     esp_ble_mesh_gen_onoff_srv_t *srv = &onoff_server_0;
 
+    ESP_LOGI(TAG, "Model pub pointer: %p", (void *)model->pub);
+
+if (model->pub != NULL) {
+    ESP_LOGI(TAG, "Pub address: 0x%04X, AppKey index: %u, TTL: %u, msg: %p",
+             model->pub->publish_addr,
+             model->pub->app_idx,
+             model->pub->ttl,
+             (void *)model->pub->msg);
+}
     srv->state.onoff = onoff;
 
     ESP_LOGI(TAG, "Publishing sensor state: %s",
