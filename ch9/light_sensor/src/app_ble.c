@@ -31,6 +31,7 @@ static esp_ble_mesh_cfg_srv_t config_server = {
 };
 
 ESP_BLE_MESH_MODEL_PUB_DEFINE(onoff_pub_0, 2 + 3, ROLE_NODE);
+
 static esp_ble_mesh_gen_onoff_srv_t onoff_server_0 = {
     .rsp_ctrl.get_auto_rsp = ESP_BLE_MESH_SERVER_AUTO_RSP,
     .rsp_ctrl.set_auto_rsp = ESP_BLE_MESH_SERVER_RSP_BY_APP,
@@ -38,7 +39,9 @@ static esp_ble_mesh_gen_onoff_srv_t onoff_server_0 = {
 };
 
 static uint8_t test_ids[] = {0, 1, 2};
+
 ESP_BLE_MESH_MODEL_PUB_DEFINE(health_pub_0, 10, ROLE_NODE);
+
 static esp_ble_mesh_health_srv_t health_server = {
     .health_test = {
         .id_count = ARRAY_SIZE(test_ids),
@@ -69,29 +72,35 @@ static esp_ble_mesh_prov_t provision = {
     .output_actions = 0,
 };
 
-static void generic_server_cb(esp_ble_mesh_generic_server_cb_event_t event,
-                              esp_ble_mesh_generic_server_cb_param_t *param)
+static void generic_server_cb(
+    esp_ble_mesh_generic_server_cb_event_t event,
+    esp_ble_mesh_generic_server_cb_param_t *param)
 {
     esp_ble_mesh_model_t *model = &root_models[1];
     esp_ble_mesh_gen_onoff_srv_t *srv = &onoff_server_0;
     esp_ble_mesh_msg_ctx_t *ctx = &param->ctx;
 
-    switch (event)
-    {
+    switch (event) {
     case ESP_BLE_MESH_GENERIC_SERVER_STATE_CHANGE_EVT:
     case ESP_BLE_MESH_GENERIC_SERVER_RECV_SET_MSG_EVT:
-        if (param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET ||
-            param->ctx.recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK)
-        {
-            if (ctx->recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET)
-            {
-                esp_ble_mesh_server_model_send_msg(model, ctx,
-                                                   ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS, sizeof(srv->state.onoff), &srv->state.onoff);
+
+        if (ctx->recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET ||
+            ctx->recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET_UNACK) {
+
+            if (ctx->recv_op == ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_SET) {
+                esp_ble_mesh_server_model_send_msg(
+                    model,
+                    ctx,
+                    ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS,
+                    sizeof(srv->state.onoff),
+                    &srv->state.onoff
+                );
             }
         }
         break;
+
     default:
-        ESP_LOGW(TAG, "unexpected event (%d)", event);
+        ESP_LOGW(TAG, "Unexpected event (%d)", event);
         break;
     }
 }
@@ -102,25 +111,39 @@ void appble_update_state(bool onoff)
     esp_ble_mesh_gen_onoff_srv_t *srv = &onoff_server_0;
 
     srv->state.onoff = onoff;
-    esp_ble_mesh_model_publish(model, ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS,
-                               sizeof(srv->state.onoff), &srv->state.onoff, ROLE_NODE);
-}
 
+    ESP_LOGI(TAG, "Publishing sensor state: %s",
+             onoff ? "ON (dark)" : "OFF (bright)");
+
+    esp_err_t err = esp_ble_mesh_model_publish(
+        model,
+        ESP_BLE_MESH_MODEL_OP_GEN_ONOFF_STATUS,
+        sizeof(srv->state.onoff),
+        &srv->state.onoff,
+        ROLE_NODE
+    );
+
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Publish failed: %s", esp_err_to_name(err));
+    } else {
+        ESP_LOGI(TAG, "Publish accepted by BLE Mesh stack");
+    }
+}
 
 void init_ble(appble_attn_cbs_t cbs)
 {
     appble_set_attn_cbs(cbs);
-    if (nvs_flash_init() == ESP_ERR_NVS_NO_FREE_PAGES)
-    {
+
+    if (nvs_flash_init() == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ESP_ERROR_CHECK(nvs_flash_init());
     }
 
-    if (appble_bt_init() != ESP_OK)
-    {
-        ESP_LOGE(TAG, "bluetooth_init failed");
+    if (appble_bt_init() != ESP_OK) {
+        ESP_LOGE(TAG, "Bluetooth initialization failed");
         return;
     }
+
     appble_get_dev_uuid(dev_uuid);
 
     esp_ble_mesh_register_prov_callback(appble_provisioning_handler);
@@ -128,14 +151,14 @@ void init_ble(appble_attn_cbs_t cbs)
     esp_ble_mesh_register_generic_server_callback(generic_server_cb);
     esp_ble_mesh_register_health_server_callback(appble_health_evt_handler);
 
-    if (esp_ble_mesh_init(&provision, &composition) != ESP_OK)
-    {
-        ESP_LOGE(TAG, "Failed to initialize mesh stack");
+    if (esp_ble_mesh_init(&provision, &composition) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize BLE Mesh stack");
         return;
     }
-    if (esp_ble_mesh_node_prov_enable(ESP_BLE_MESH_PROV_ADV | ESP_BLE_MESH_PROV_GATT) != ESP_OK)
-    {
-        ESP_LOGE(TAG, "Failed to enable mesh node");
+
+    if (esp_ble_mesh_node_prov_enable(
+            ESP_BLE_MESH_PROV_ADV | ESP_BLE_MESH_PROV_GATT) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to enable BLE Mesh node");
         return;
     }
 }
