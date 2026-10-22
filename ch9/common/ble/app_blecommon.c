@@ -91,17 +91,25 @@ void appble_provisioning_handler(esp_ble_mesh_prov_cb_event_t event,
     }
 }
 
+
 void appble_config_handler(esp_ble_mesh_cfg_server_cb_event_t event,
                            esp_ble_mesh_cfg_server_cb_param_t *param)
 {
+    ESP_LOGI(TAG, "Config server event: %d", event);
+
     if (event == ESP_BLE_MESH_CFG_SERVER_STATE_CHANGE_EVT)
     {
+        ESP_LOGI(TAG, "Config operation received: 0x%04X",
+                 (unsigned int)param->ctx.recv_op);
+
         switch (param->ctx.recv_op)
         {
         case ESP_BLE_MESH_MODEL_OP_APP_KEY_ADD:
             ESP_LOGI(TAG, "config: app key added");
             break;
+
         default:
+            ESP_LOGI(TAG, "config: other operation");
             break;
         }
     }
