@@ -143,10 +143,17 @@ void init_ble(appble_attn_cbs_t cbs)
 {
     appble_set_attn_cbs(cbs);
 
-    if (nvs_flash_init() == ESP_ERR_NVS_NO_FREE_PAGES) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ESP_ERROR_CHECK(nvs_flash_init());
-    }
+
+
+esp_err_t nvs_err = nvs_flash_init();
+ESP_LOGI(TAG, "NVS initialization result: %s",
+         esp_err_to_name(nvs_err));
+
+if (nvs_err == ESP_ERR_NVS_NO_FREE_PAGES) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ESP_ERROR_CHECK(nvs_flash_init());
+}
+
 
     if (appble_bt_init() != ESP_OK) {
         ESP_LOGE(TAG, "Bluetooth initialization failed");
