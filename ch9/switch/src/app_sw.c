@@ -1,4 +1,5 @@
 #include "app_sw.h"
+#include "esp_log.h"
 
 #include <stddef.h>
 #include "freertos/FreeRTOS.h"
@@ -27,10 +28,14 @@ void init_hw(void)
 void switch_set(bool status)
 {
     // Active LOW relay: ON = pin LOW, OFF = pin HIGH
-    gpio_set_level(RELAY_PIN, status ? 0 : 1);
-    m_status = status;
-}
+    int level = status ? 0 : 1;
 
+    gpio_set_level(RELAY_PIN, level);
+    m_status = status;
+
+    ESP_LOGI("switch", "switch_set: status=%d, GPIO%d level=%d",
+             status, RELAY_PIN, gpio_get_level(RELAY_PIN));
+}
 bool switch_get(void)
 {
     return m_status;
